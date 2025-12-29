@@ -1,6 +1,11 @@
-these are my dot files, there is a level of hierarchy so one can go inside the actual dotfiles (./actual_dots) and do 
-```
-stow -t ~ .
-```
+Dotfiles layout note
+--------------------
+This repo keeps dotfiles in a nested folder so the symlinked targets stay clean
+and the .git directory does not appear in $HOME.
+Layout:
+    ~/.dotfiles/actual_dots/   <-- stow package (files live here)
+    ~/.dotfiles/.git           <-- repo metadata stays here
+Usage:
+    cd ~/.dotfiles
+    stow -t ~ actual_dots
 
-It allows me to have a .git and to not have it in the symlink farm.
