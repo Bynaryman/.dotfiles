@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Locate theme files: prefer dotfiles, fallback to local repo themes/
+THEMES_DIR="$HOME/.dotfiles/.st/themes"
+VIV="$THEMES_DIR/modus-vivendi.Xresources"
+OPR="$THEMES_DIR/modus-operandi.Xresources"
+require() { for f in "$@"; do [[ -f "$f" ]] || { echo "st-theme: missing $f" >&2; exit 1; }; done; }
+require "$VIV" "$OPR"
+
+cmd="${1:-toggle}"
+apply() {
+  xrdb -merge "$1"
+  if [[ -n "${ST_PID:-}" ]]; then
+    kill -USR1 "$ST_PID" 2>/dev/null || true
+  fi
+}
+
+case "$cmd" in
+  vivendi|dark)
+    apply "$VIV" ;;
+  operandi|light)
+    apply "$OPR" ;;
+  vivendi-deuteranopia)
+    apply "$THEMES_DIR/modus-vivendi-deuteranopia.Xresources" ;;
+  operandi-deuteranopia)
+    apply "$THEMES_DIR/modus-operandi-deuteranopia.Xresources" ;;
+  vivendi-tritanopia)
+    apply "$THEMES_DIR/modus-vivendi-tritanopia.Xresources" ;;
+  operandi-tritanopia)
+    apply "$THEMES_DIR/modus-operandi-tritanopia.Xresources" ;;
+  toggle)
+    cur=$(xrdb -query | awk '/^st\.theme:/ {print $2}' || true)
+    if [[ "$cur" == "vivendi" ]]; then
+      apply "$OPR"
+    else
+      apply "$VIV"
+    fi
+    ;;
+  *)
+    echo "Usage: st-theme [vivendi|operandi|vivendi-deuteranopia|operandi-deuteranopia|vivendi-tritanopia|operandi-tritanopia|toggle]" >&2; exit 1 ;;
+esac

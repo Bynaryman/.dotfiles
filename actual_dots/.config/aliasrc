@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# Use neovim for vim if present.
+command -v nvim >/dev/null && alias vim="nvim" vimdiff="nvim -d"
+
+# Verbosity and settings that you pretty much just always are going to want.
+alias \
+	bat="cat /sys/class/power_supply/BAT?/capacity" \
+	cp="cp -iv" \
+	mv="mv -iv" \
+	rm="rm -v" \
+	mkd="mkdir -pv" \
+	yt="youtube-dl --add-metadata -i" \
+	yta="yt -x -f bestaudio/best" \
+	yt_playlist='yt --ignore-errors --output "%(title)s.%(ext)s" --extract-audio --audio-format mp3' \
+	yt_channel='yt --yes-playlist -f bestaudio/best --extract-audio --audio-format mp3 -ciw -o "%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s" -v' \
+	ducks='du -sh * | sort -hr' \
+	ffmpeg="ffmpeg -hide_banner"
+
+# Colorize commands when possible.
+alias \
+	ls="ls -hN --color=auto --group-directories-first" \
+	grep="grep --color=auto" \
+	diff="diff --color=auto" \
+	ccat="highlight --out-format=ansi"
+
+# These common commands are just too long! Abbreviate them.
+alias \
+	ka="killall" \
+	g="git" \
+	ll="ls -la" \
+	trem="transmission-remote" \
+	YT="youtube-viewer" \
+	sdn="sudo shutdown -h now" \
+	f="$FILE" \
+	e="$EDITOR" \
+	v="$EDITOR" \
+	p="sudo pacman" \
+	xi="sudo xbps-install" \
+	xr="sudo xbps-remove -R" \
+	xq="xbps-query"
+
+# This alias is important. It enables the `pauseallmpv` command.
+alias mpv="mpv --input-ipc-server=/tmp/mpvsoc$(date +%s)"
+
+# Some other stuff
+alias \
+	magit="nvim -c MagitOnly" \
+	ref="shortcuts >/dev/null; source ~/.config/shortcutrc" \
+	weath="less -S ~/.local/share/weatherreport" \
+
+# SSH accesses
+alias EPI01='ssh -X lledoux@epi01.bsc.es'
+alias EPI02='ssh -X lledoux@epi02.bsc.es'
+alias EPI03='ssh -X lledoux@epi03.bsc.es'
+alias P9='ssh -X lledoux@p9r3n16.bsc.es'
+alias CTEKNL='ssh -X bsc28995@klogin1.bsc.es'
+alias HOLYGRAIL='ssh -X lledoux@holigrail.citi.insa-lyon.fr'
+
+# BSC VPN
+alias BSC_VPN='sudo openfortivpn gw.bsc.es:443 -u lledoux --trusted-cert 447c58741d77c8f3ff923c2f7846d6ef8e231c59bd4c32b24395df0393091f7f'
+alias UPC_VPN='sudo openfortivpn myupclink.upc.edu:443 -u luis.ledoux'
+alias INRIAVPN='/opt/cisco/anyconnect/bin/vpnui'
+
+# MLIR / CIRCT / LLVM
+
+# Teaching
+alias digital="~/Documents/opt/Digital/Digital.sh &"
+
+

@@ -1,0 +1,428 @@
+% Created 2025-12-29 lun. 00:31
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\author{Louis Ledoux}
+\date{\today}
+\title{My Literate Emacs Configuration}
+\hypersetup{
+ pdfauthor={Louis Ledoux},
+ pdftitle={My Literate Emacs Configuration},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 30.2 (Org mode 9.7.11)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\section{Initialization}
+\label{sec:org0d2a1a5}
+
+This document contains a literate Emacs configuration.
+The prose explains \textbf{what} and \textbf{why}, while the tangled
+Emacs Lisp retains concise operational comments.
+\subsection{Package bootstrap}
+\label{sec:org7ef9e9c}
+This section must run first. It disables implicit startup
+initialization, configures package archives, and ensures
+that \texttt{use-package} is available before any other configuration.
+\subsubsection{Disable implicit startup initialization}
+\label{sec:orgabf4cf4}
+\begin{verbatim}
+(setq package-enable-at-startup nil)   ;; prevent implicit init from early-init
+\end{verbatim}
+\subsubsection{Package system and archives}
+\label{sec:org76fbd6d}
+\begin{verbatim}
+(require 'package)
+
+(setq package-archives
+      '(("gnu"   . "https://elpa.gnu.org/packages/")
+        ("melpa" . "https://melpa.org/packages/")))
+\end{verbatim}
+\subsubsection{Initialization and archive refresh}
+\label{sec:orgcf824e9}
+\begin{verbatim}
+(unless package--initialized
+  (package-initialize))
+
+(unless package-archive-contents
+  (package-refresh-contents))
+\end{verbatim}
+\subsubsection{use-package bootstrap}
+\label{sec:org196b6ab}
+\texttt{use-package} is used throughout the configuration to keep
+package declarations declarative and composable.
+
+\begin{verbatim}
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(eval-when-compile
+  (require 'use-package))
+
+(setq use-package-always-ensure t)   ;; auto-install dependencies
+\end{verbatim}
+\section{Core Emacs Behavior}
+\label{sec:orgbab4986}
+
+This section configures baseline Emacs behavior unrelated
+to specific packages.
+\subsection{Startup and UI}
+\label{sec:orgc54909b}
+
+\subsubsection{Initial buffer state}
+\label{sec:org5a12104}
+\begin{verbatim}
+(setq inhibit-startup-message t)   ;; start with empty screen
+\end{verbatim}
+\subsubsection{Disable UI chrome}
+\label{sec:orgc217211}
+\begin{verbatim}
+(scroll-bar-mode -1)        ;; disable visible scrollbar
+(tool-bar-mode -1)          ;; disable toolbar
+(tooltip-mode -1)           ;; disable tooltips
+(menu-bar-mode -1)          ;; disable menu bar
+(set-fringe-mode 10)        ;; breathing room
+\end{verbatim}
+\subsubsection{Visual feedback}
+\label{sec:orgbc0dad5}
+\begin{verbatim}
+(setq visible-bell t)       ;; use visible bell instead of sound
+\end{verbatim}
+\subsection{Navigation and layout}
+\label{sec:org885c14e}
+
+\subsubsection{Line numbers}
+\label{sec:org4bb9e3b}
+\begin{verbatim}
+(global-display-line-numbers-mode 1)
+(setq display-line-numbers-type 'relative)   ;; relative numbers
+\end{verbatim}
+\subsubsection{Window splitting policy}
+\label{sec:org80018c5}
+\begin{verbatim}
+(setq split-height-threshold nil
+      split-width-threshold 0)   ;; split vertically by default
+\end{verbatim}
+\subsubsection{Escape behavior}
+\label{sec:org998ea37}
+\begin{verbatim}
+(global-set-key (kbd "<escape>") #'keyboard-escape-quit)   ;; ESC quits prompts
+\end{verbatim}
+\subsection{Typography}
+\label{sec:org3803d95}
+
+\subsubsection{Default font (optional)}
+\label{sec:org115de72}
+\begin{verbatim}
+;; (set-face-attribute 'default nil :font "Iosevka" :height 280)
+(set-face-attribute 'default nil
+                  :font "PxPlus IBM VGA8"
+                  :height 280)
+\end{verbatim}
+\section{Appearance}
+\label{sec:orgf14fec9}
+
+\subsection{Modus themes}
+\label{sec:org1883791}
+The Modus themes provide a carefully designed, accessible
+color palette with light and dark variants.
+\subsubsection{Load local theme repository}
+\label{sec:org89ff55b}
+\begin{verbatim}
+(add-to-list 'load-path "~/.emacs.d/modus-themes")
+(require 'modus-themes)
+\end{verbatim}
+\subsubsection{Active theme}
+\label{sec:org9678b6c}
+\begin{verbatim}
+(load-theme 'modus-operandi-tinted :no-confirm)
+\end{verbatim}
+\subsubsection{Theme toggling}
+\label{sec:org11bd4cc}
+\begin{verbatim}
+(setq modus-themes-to-toggle
+      '(modus-operandi-tinted modus-vivendi-tinted))
+
+(define-key global-map (kbd "<f5>") #'modus-themes-toggle)
+\end{verbatim}
+\section{Minibuffer and Completion}
+\label{sec:org54ffbe8}
+
+This stack follows the modern Vertico + Orderless + Consult
+architecture, keeping Emacs completion native and extensible.
+\subsection{Core minibuffer semantics}
+\label{sec:org3f67ec9}
+
+\subsubsection{Recursive minibuffers}
+\label{sec:org260dd7a}
+\begin{verbatim}
+(setq enable-recursive-minibuffers t)   ;; allow nested minibuffers
+\end{verbatim}
+\subsubsection{Command filtering}
+\label{sec:org48145ca}
+\begin{verbatim}
+(setq read-extended-command-predicate
+      #'command-completion-default-include-p)
+\end{verbatim}
+\subsubsection{Multiple selection indicator}
+\label{sec:org35f4a61}
+This adds a visible indicator when completing multiple values.
+
+\begin{verbatim}
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+
+(advice-add #'completing-read-multiple
+            :filter-args #'crm-indicator)
+\end{verbatim}
+\subsubsection{Minibuffer prompt protection}
+\label{sec:orgf6f236b}
+\begin{verbatim}
+(setq minibuffer-prompt-properties
+      '(read-only t cursor-intangible t face minibuffer-prompt))
+
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+\end{verbatim}
+\subsection{Completion UI}
+\label{sec:orgc9f0a83}
+
+\subsubsection{Vertico}
+\label{sec:orgfa7a78d}
+Vertico provides a vertical minibuffer layout with eager
+candidate display.
+
+\begin{verbatim}
+(use-package vertico
+  :config
+  (setq vertico-cycle t        ;; cycle at boundaries
+        vertico-count 30       ;; number of visible candidates
+        vertico-resize nil)    ;; stable minibuffer height
+  (vertico-mode 1))
+\end{verbatim}
+\subsubsection{Marginalia}
+\label{sec:org44abed7}
+Marginalia adds contextual annotations to completion candidates.
+
+\begin{verbatim}
+(use-package marginalia
+  :config
+  (marginalia-mode 1))
+\end{verbatim}
+\subsubsection{Orderless}
+\label{sec:org4047822}
+Orderless enables out-of-order pattern matching using space-
+separated components.
+
+\begin{verbatim}
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides
+   '((file (styles partial-completion)))))
+\end{verbatim}
+\subsubsection{Consult}
+\label{sec:orgb392bed}
+Consult provides enhanced variants of standard search commands.
+
+\begin{verbatim}
+(use-package consult
+  :bind (("M-s M-g" . consult-grep)
+         ("M-s M-f" . consult-find)
+         ("M-s M-o" . consult-outline)
+         ("M-s M-l" . consult-line)
+         ("M-s M-b" . consult-buffer)))
+\end{verbatim}
+\subsection{Actions and export}
+\label{sec:orgccb90bc}
+
+\subsubsection{Embark}
+\label{sec:org5ea0871}
+Embark exposes contextual actions for minibuffer candidates
+and buffer objects.
+
+\begin{verbatim}
+(use-package embark
+  :bind (("C-." . embark-act)
+         :map minibuffer-local-map
+         ("C-c C-c" . embark-collect)
+         ("C-c C-e" . embark-export)))
+\end{verbatim}
+\subsubsection{Embark–Consult integration}
+\label{sec:org0eacfc2}
+\begin{verbatim}
+(use-package embark-consult)
+\end{verbatim}
+\subsubsection{Writable grep buffers}
+\label{sec:org90a3bb6}
+\begin{verbatim}
+(use-package wgrep
+  :bind (:map grep-mode-map
+              ("e" . wgrep-change-to-wgrep-mode)
+              ("C-x C-q" . wgrep-change-to-wgrep-mode)
+              ("C-c C-c" . wgrep-finish-edit)))
+\end{verbatim}
+\section{State Persistence}
+\label{sec:org8c29a4b}
+
+\subsection{Minibuffer history}
+\label{sec:orgbbd15cc}
+\begin{verbatim}
+(use-package savehist
+  :init
+  (savehist-mode 1))
+\end{verbatim}
+\subsection{Recently visited files}
+\label{sec:orgb934f3a}
+\begin{verbatim}
+(recentf-mode 1)
+\end{verbatim}
+\section{Language and Editing Support}
+\label{sec:org5ee403f}
+
+\subsection{\LaTeX{}}
+\label{sec:orgec638ca}
+AUCTeX is used to ensure all `.tex` files open in \LaTeX{} mode.
+
+\begin{verbatim}
+(use-package tex
+  :ensure auctex
+  :mode ("\\.tex\\'" . LaTeX-mode)
+  :init
+  (setq TeX-default-mode 'LaTeX-mode
+        TeX-force-default-mode t     ;; do not guess from content
+        TeX-parse-self t))
+\end{verbatim}
+\subsection{Visual assistance}
+\label{sec:orge8f5257}
+
+\subsubsection{Color literals}
+\label{sec:org99646a0}
+\begin{verbatim}
+(use-package colorful-mode
+  :hook (prog-mode text-mode LaTeX-mode))
+\end{verbatim}
+\subsubsection{Delimiter depth}
+\label{sec:org670d051}
+\begin{verbatim}
+(use-package rainbow-delimiters
+  :hook ((prog-mode . rainbow-delimiters-mode)
+         (latex-mode . rainbow-delimiters-mode)))
+\end{verbatim}
+\section{Discoverability}
+\label{sec:org6048b87}
+
+\subsection{Keybinding hints}
+\label{sec:org9f13689}
+\begin{verbatim}
+(use-package which-key
+  :init
+  (which-key-mode 1)
+  :config
+  (setq which-key-idle-delay 0.5
+        which-key-idle-secondary-delay 0.1))
+\end{verbatim}
+\section{Org Infrastructure}
+\label{sec:orgb6bbe43}
+
+\subsection{Babel languages}
+\label{sec:org725cda3}
+\begin{verbatim}
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((latex . t)))
+\end{verbatim}
+\section{Modal Editing}
+\label{sec:org13c4097}
+
+\subsection{Evil}
+\label{sec:org0d8a56f}
+Evil provides Vim-style modal editing with Emacs integration.
+
+\begin{verbatim}
+(use-package evil
+  :init
+  (setq evil-want-integration t
+        evil-want-keybinding nil
+        evil-want-C-u-scroll t
+        evil-want-C-i-jump nil
+        evil-symbol-word-search t)
+  :config
+  (evil-mode 1))
+\end{verbatim}
+\subsubsection{Insert-state ergonomics}
+\label{sec:orge59379f}
+\begin{verbatim}
+(define-key evil-insert-state-map
+            (kbd "C-g") #'evil-normal-state)
+
+(define-key evil-insert-state-map
+            (kbd "C-h") #'evil-delete-backward-char-and-join)
+\end{verbatim}
+\subsubsection{Motion semantics}
+\label{sec:org4ffba26}
+\begin{verbatim}
+(evil-global-set-key 'motion "j" #'evil-next-visual-line)
+(evil-global-set-key 'motion "k" #'evil-previous-visual-line)
+\end{verbatim}
+\subsubsection{Initial states}
+\label{sec:org8dff86c}
+\begin{verbatim}
+(evil-set-initial-state 'messages-buffer-mode 'normal)
+(evil-set-initial-state 'dashboard-mode 'normal)
+\end{verbatim}
+\subsection{Evil collection}
+\label{sec:org87cda1d}
+\begin{verbatim}
+(use-package evil-collection
+  :after evil
+  :config
+  (evil-collection-init))
+\end{verbatim}
+\section{Markup Formats}
+\label{sec:org06abae1}
+
+\subsection{Markdown}
+\label{sec:orgbaeb056}
+\begin{verbatim}
+(use-package markdown-mode
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init
+  (setq markdown-command "markdown"))
+\end{verbatim}
+\section{Customization Backend}
+\label{sec:org9c1ac14}
+
+\subsection{Custom variables}
+\label{sec:org48658b7}
+\begin{verbatim}
+(custom-set-variables
+ '(package-selected-packages nil))
+\end{verbatim}
+\subsection{Custom faces}
+\label{sec:orgf33549e}
+\begin{verbatim}
+(custom-set-faces)
+\end{verbatim}
+\end{document}

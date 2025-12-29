@@ -1,0 +1,387 @@
+#+title: My Literate Emacs Configuration
+#+author: Louis Ledoux
+#+options: toc:2 num:t ^:nil
+#+startup: content
+#+property: header-args:emacs-lisp :tangle init.el
+
+* Initialization
+
+This document contains a literate Emacs configuration.
+The prose explains *what* and *why*, while the tangled
+Emacs Lisp retains concise operational comments.
+
+** Package bootstrap
+This section must run first. It disables implicit startup
+initialization, configures package archives, and ensures
+that =use-package= is available before any other configuration.
+
+*** Disable implicit startup initialization
+#+begin_src emacs-lisp
+(setq package-enable-at-startup nil)   ;; prevent implicit init from early-init
+#+end_src
+
+*** Package system and archives
+#+begin_src emacs-lisp
+(require 'package)
+
+(setq package-archives
+      '(("gnu"   . "https://elpa.gnu.org/packages/")
+        ("melpa" . "https://melpa.org/packages/")))
+#+end_src
+
+*** Initialization and archive refresh
+#+begin_src emacs-lisp
+(unless package--initialized
+  (package-initialize))
+
+(unless package-archive-contents
+  (package-refresh-contents))
+#+end_src
+
+*** use-package bootstrap
+=use-package= is used throughout the configuration to keep
+package declarations declarative and composable.
+
+#+begin_src emacs-lisp
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(eval-when-compile
+  (require 'use-package))
+
+(setq use-package-always-ensure t)   ;; auto-install dependencies
+#+end_src
+
+* Core Emacs Behavior
+
+This section configures baseline Emacs behavior unrelated
+to specific packages.
+
+** Startup and UI
+
+*** Initial buffer state
+#+begin_src emacs-lisp
+(setq inhibit-startup-message t)   ;; start with empty screen
+#+end_src
+
+*** Disable UI chrome
+#+begin_src emacs-lisp
+(scroll-bar-mode -1)        ;; disable visible scrollbar
+(tool-bar-mode -1)          ;; disable toolbar
+(tooltip-mode -1)           ;; disable tooltips
+(menu-bar-mode -1)          ;; disable menu bar
+(set-fringe-mode 10)        ;; breathing room
+#+end_src
+
+*** Visual feedback
+#+begin_src emacs-lisp
+(setq visible-bell t)       ;; use visible bell instead of sound
+#+end_src
+
+** Navigation and layout
+
+*** Line numbers
+#+begin_src emacs-lisp
+(global-display-line-numbers-mode 1)
+(setq display-line-numbers-type 'relative)   ;; relative numbers
+#+end_src
+
+*** Window splitting policy
+#+begin_src emacs-lisp
+(setq split-height-threshold nil
+      split-width-threshold 0)   ;; split vertically by default
+#+end_src
+
+*** Escape behavior
+#+begin_src emacs-lisp
+(global-set-key (kbd "<escape>") #'keyboard-escape-quit)   ;; ESC quits prompts
+#+end_src
+
+** Typography
+
+*** Default font (optional)
+#+begin_src emacs-lisp
+  ;; (set-face-attribute 'default nil :font "Iosevka" :height 280)
+  (set-face-attribute 'default nil
+                    :font "PxPlus IBM VGA8"
+                    :height 140)
+#+end_src
+
+* Appearance
+
+** Modus themes
+The Modus themes provide a carefully designed, accessible
+color palette with light and dark variants.
+
+*** Load local theme repository
+#+begin_src emacs-lisp
+(add-to-list 'load-path "~/.emacs.d/modus-themes")
+(require 'modus-themes)
+#+end_src
+
+*** Active theme
+#+begin_src emacs-lisp
+(load-theme 'modus-operandi-tinted :no-confirm)
+#+end_src
+
+*** Theme toggling
+#+begin_src emacs-lisp
+(setq modus-themes-to-toggle
+      '(modus-operandi-tinted modus-vivendi-tinted))
+
+(define-key global-map (kbd "<f5>") #'modus-themes-toggle)
+#+end_src
+
+* Minibuffer and Completion
+
+This stack follows the modern Vertico + Orderless + Consult
+architecture, keeping Emacs completion native and extensible.
+
+** Core minibuffer semantics
+
+*** Recursive minibuffers
+#+begin_src emacs-lisp
+(setq enable-recursive-minibuffers t)   ;; allow nested minibuffers
+#+end_src
+
+*** Command filtering
+#+begin_src emacs-lisp
+(setq read-extended-command-predicate
+      #'command-completion-default-include-p)
+#+end_src
+
+*** Multiple selection indicator
+This adds a visible indicator when completing multiple values.
+
+#+begin_src emacs-lisp
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+
+(advice-add #'completing-read-multiple
+            :filter-args #'crm-indicator)
+#+end_src
+
+*** Minibuffer prompt protection
+#+begin_src emacs-lisp
+(setq minibuffer-prompt-properties
+      '(read-only t cursor-intangible t face minibuffer-prompt))
+
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+#+end_src
+
+** Completion UI
+
+*** Vertico
+Vertico provides a vertical minibuffer layout with eager
+candidate display.
+
+#+begin_src emacs-lisp
+(use-package vertico
+  :config
+  (setq vertico-cycle t        ;; cycle at boundaries
+        vertico-count 30       ;; number of visible candidates
+        vertico-resize nil)    ;; stable minibuffer height
+  (vertico-mode 1))
+#+end_src
+
+*** Marginalia
+Marginalia adds contextual annotations to completion candidates.
+
+#+begin_src emacs-lisp
+(use-package marginalia
+  :config
+  (marginalia-mode 1))
+#+end_src
+
+*** Orderless
+Orderless enables out-of-order pattern matching using space-
+separated components.
+
+#+begin_src emacs-lisp
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides
+   '((file (styles partial-completion)))))
+#+end_src
+
+*** Consult
+Consult provides enhanced variants of standard search commands.
+
+#+begin_src emacs-lisp
+(use-package consult
+  :bind (("M-s M-g" . consult-grep)
+         ("M-s M-f" . consult-find)
+         ("M-s M-o" . consult-outline)
+         ("M-s M-l" . consult-line)
+         ("M-s M-b" . consult-buffer)))
+#+end_src
+
+** Actions and export
+
+*** Embark
+Embark exposes contextual actions for minibuffer candidates
+and buffer objects.
+
+#+begin_src emacs-lisp
+(use-package embark
+  :bind (("C-." . embark-act)
+         :map minibuffer-local-map
+         ("C-c C-c" . embark-collect)
+         ("C-c C-e" . embark-export)))
+#+end_src
+
+*** Embark–Consult integration
+#+begin_src emacs-lisp
+(use-package embark-consult)
+#+end_src
+
+*** Writable grep buffers
+#+begin_src emacs-lisp
+(use-package wgrep
+  :bind (:map grep-mode-map
+              ("e" . wgrep-change-to-wgrep-mode)
+              ("C-x C-q" . wgrep-change-to-wgrep-mode)
+              ("C-c C-c" . wgrep-finish-edit)))
+#+end_src
+
+* State Persistence
+
+** Minibuffer history
+#+begin_src emacs-lisp
+(use-package savehist
+  :init
+  (savehist-mode 1))
+#+end_src
+
+** Recently visited files
+#+begin_src emacs-lisp
+(recentf-mode 1)
+#+end_src
+
+* Language and Editing Support
+
+** LaTeX
+AUCTeX is used to ensure all `.tex` files open in LaTeX mode.
+
+#+begin_src emacs-lisp
+(use-package tex
+  :ensure auctex
+  :mode ("\\.tex\\'" . LaTeX-mode)
+  :init
+  (setq TeX-default-mode 'LaTeX-mode
+        TeX-force-default-mode t     ;; do not guess from content
+        TeX-parse-self t))
+#+end_src
+
+** Visual assistance
+
+*** Color literals
+#+begin_src emacs-lisp
+(use-package colorful-mode
+  :hook (prog-mode text-mode LaTeX-mode))
+#+end_src
+
+*** Delimiter depth
+#+begin_src emacs-lisp
+(use-package rainbow-delimiters
+  :hook ((prog-mode . rainbow-delimiters-mode)
+         (latex-mode . rainbow-delimiters-mode)))
+#+end_src
+
+* Discoverability
+
+** Keybinding hints
+#+begin_src emacs-lisp
+(use-package which-key
+  :init
+  (which-key-mode 1)
+  :config
+  (setq which-key-idle-delay 0.5
+        which-key-idle-secondary-delay 0.1))
+#+end_src
+
+* Org Infrastructure
+
+** Babel languages
+#+begin_src emacs-lisp
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((latex . t)))
+#+end_src
+
+* Modal Editing
+
+** Evil
+Evil provides Vim-style modal editing with Emacs integration.
+
+#+begin_src emacs-lisp
+(use-package evil
+  :init
+  (setq evil-want-integration t
+        evil-want-keybinding nil
+        evil-want-C-u-scroll t
+        evil-want-C-i-jump nil
+        evil-symbol-word-search t)
+  :config
+  (evil-mode 1))
+#+end_src
+
+*** Insert-state ergonomics
+#+begin_src emacs-lisp
+(define-key evil-insert-state-map
+            (kbd "C-g") #'evil-normal-state)
+
+(define-key evil-insert-state-map
+            (kbd "C-h") #'evil-delete-backward-char-and-join)
+#+end_src
+
+*** Motion semantics
+#+begin_src emacs-lisp
+(evil-global-set-key 'motion "j" #'evil-next-visual-line)
+(evil-global-set-key 'motion "k" #'evil-previous-visual-line)
+#+end_src
+
+*** Initial states
+#+begin_src emacs-lisp
+(evil-set-initial-state 'messages-buffer-mode 'normal)
+(evil-set-initial-state 'dashboard-mode 'normal)
+#+end_src
+
+** Evil collection
+#+begin_src emacs-lisp
+(use-package evil-collection
+  :after evil
+  :config
+  (evil-collection-init))
+#+end_src
+
+* Markup Formats
+
+** Markdown
+#+begin_src emacs-lisp
+(use-package markdown-mode
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init
+  (setq markdown-command "markdown"))
+#+end_src
+
+* Customization Backend
+
+** Custom variables
+#+begin_src emacs-lisp
+(custom-set-variables
+ '(package-selected-packages nil))
+#+end_src
+
+** Custom faces
+#+begin_src emacs-lisp
+(custom-set-faces)
+#+end_src

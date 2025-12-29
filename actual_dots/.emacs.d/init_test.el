@@ -1,0 +1,181 @@
+(setq package-enable-at-startup nil)   ;; prevent implicit init from early-init
+
+(require 'package)
+
+(setq package-archives
+      '(("gnu"   . "https://elpa.gnu.org/packages/")
+        ("melpa" . "https://melpa.org/packages/")))
+
+(unless package--initialized
+  (package-initialize))
+
+(unless package-archive-contents
+  (package-refresh-contents))
+
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(eval-when-compile
+  (require 'use-package))
+
+(setq use-package-always-ensure t)   ;; auto-install dependencies
+
+(setq inhibit-startup-message t)   ;; start with empty screen
+
+(scroll-bar-mode -1)        ;; disable visible scrollbar
+(tool-bar-mode -1)          ;; disable toolbar
+(tooltip-mode -1)           ;; disable tooltips
+(menu-bar-mode -1)          ;; disable menu bar
+(set-fringe-mode 10)        ;; breathing room
+
+(setq visible-bell t)       ;; use visible bell instead of sound
+
+(global-display-line-numbers-mode 1)
+(setq display-line-numbers-type 'relative)   ;; relative numbers
+
+(setq split-height-threshold nil
+      split-width-threshold 0)   ;; split vertically by default
+
+(global-set-key (kbd "<escape>") #'keyboard-escape-quit)   ;; ESC quits prompts
+
+(set-face-attribute 'default nil :font "Iosevka" :height 280)
+
+(add-to-list 'load-path "~/.emacs.d/modus-themes")
+(require 'modus-themes)
+
+(load-theme 'modus-operandi-tinted :no-confirm)
+
+(setq modus-themes-to-toggle
+      '(modus-operandi-tinted modus-vivendi-tinted))
+
+(define-key global-map (kbd "<f5>") #'modus-themes-toggle)
+
+(setq enable-recursive-minibuffers t)   ;; allow nested minibuffers
+
+(setq read-extended-command-predicate
+      #'command-completion-default-include-p)
+
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+
+(advice-add #'completing-read-multiple
+            :filter-args #'crm-indicator)
+
+(setq minibuffer-prompt-properties
+      '(read-only t cursor-intangible t face minibuffer-prompt))
+
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+(use-package vertico
+  :config
+  (setq vertico-cycle t        ;; cycle at boundaries
+        vertico-count 30       ;; number of visible candidates
+        vertico-resize nil)    ;; stable minibuffer height
+  (vertico-mode 1))
+
+(use-package marginalia
+  :config
+  (marginalia-mode 1))
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides
+   '((file (styles partial-completion)))))
+
+(use-package consult
+  :bind (("M-s M-g" . consult-grep)
+         ("M-s M-f" . consult-find)
+         ("M-s M-o" . consult-outline)
+         ("M-s M-l" . consult-line)
+         ("M-s M-b" . consult-buffer)))
+
+(use-package embark
+  :bind (("C-." . embark-act)
+         :map minibuffer-local-map
+         ("C-c C-c" . embark-collect)
+         ("C-c C-e" . embark-export)))
+
+(use-package embark-consult)
+
+(use-package wgrep
+  :bind (:map grep-mode-map
+              ("e" . wgrep-change-to-wgrep-mode)
+              ("C-x C-q" . wgrep-change-to-wgrep-mode)
+              ("C-c C-c" . wgrep-finish-edit)))
+
+(use-package savehist
+  :init
+  (savehist-mode 1))
+
+(recentf-mode 1)
+
+(use-package tex
+  :ensure auctex
+  :mode ("\\.tex\\'" . LaTeX-mode)
+  :init
+  (setq TeX-default-mode 'LaTeX-mode
+        TeX-force-default-mode t     ;; do not guess from content
+        TeX-parse-self t))
+
+(use-package colorful-mode
+  :hook (prog-mode text-mode LaTeX-mode))
+
+(use-package rainbow-delimiters
+  :hook ((prog-mode . rainbow-delimiters-mode)
+         (latex-mode . rainbow-delimiters-mode)))
+
+(use-package which-key
+  :init
+  (which-key-mode 1)
+  :config
+  (setq which-key-idle-delay 0.5
+        which-key-idle-secondary-delay 0.1))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((latex . t)))
+
+(use-package evil
+  :init
+  (setq evil-want-integration t
+        evil-want-keybinding nil
+        evil-want-C-u-scroll t
+        evil-want-C-i-jump nil
+        evil-symbol-word-search t)
+  :config
+  (evil-mode 1))
+
+(define-key evil-insert-state-map
+            (kbd "C-g") #'evil-normal-state)
+
+(define-key evil-insert-state-map
+            (kbd "C-h") #'evil-delete-backward-char-and-join)
+
+(evil-global-set-key 'motion "j" #'evil-next-visual-line)
+(evil-global-set-key 'motion "k" #'evil-previous-visual-line)
+
+(evil-set-initial-state 'messages-buffer-mode 'normal)
+(evil-set-initial-state 'dashboard-mode 'normal)
+
+(use-package evil-collection
+  :after evil
+  :config
+  (evil-collection-init))
+
+(use-package markdown-mode
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init
+  (setq markdown-command "markdown"))
+
+(custom-set-variables
+ '(package-selected-packages nil))
+
+(custom-set-faces)
